@@ -10,42 +10,30 @@ if grep -qi Microsoft /proc/version; then
   fail "Running inside WSL is not supported"
 fi
 
-# --- Ensure we are not running as root user directly ---
-if [[ $SUDO_USER = "root" || -z $SUDO_USER ]]; then
-  echo "⚙️  Root session detected — let's create a secure non-root user."
-  read -e -p "Enter new username: " NEWUSER
-  [[ -n $NEWUSER ]] || fail "Username cannot be empty"
-  adduser "$NEWUSER" --gecos ''
-  usermod -aG sudo "$NEWUSER"
-  echo "$NEWUSER ALL=(ALL:ALL) ALL" >> /etc/sudoers
-  echo "✅ Created user '$NEWUSER'. Please login as that user and rerun this script."
-  exit 0
-fi
-
 # --- SSH port selection ---
 DEFAULT_SSH_PORT=22
 read -e -p "Enter SSH port [default: 22, e.g. 2222 for obscurity]: " SSH_PORT
 SSH_PORT=${SSH_PORT:-$DEFAULT_SSH_PORT}
 
-# --- SSH key setup ---
-MYHOME="/home/$SUDO_USER"
-mkdir -p "$MYHOME/.ssh"
-chmod 700 "$MYHOME/.ssh"
-if [[ ! -s "$MYHOME/.ssh/authorized_keys" ]]; then
+# --- SSH key setup (for the current sudo user) ---
+SUDO_HOME=$(eval echo "~$SUDO_USER")
+mkdir -p "$SUDO_HOME/.ssh"
+chmod 700 "$SUDO_HOME/.ssh"
+if [[ ! -s "$SUDO_HOME/.ssh/authorized_keys" ]]; then
   read -e -p "Paste your public SSH key: " PUBKEY
-  echo "$PUBKEY" > "$MYHOME/.ssh/authorized_keys"
-  chmod 600 "$MYHOME/.ssh/authorized_keys"
-  chown -R "$SUDO_USER:$SUDO_USER" "$MYHOME/.ssh"
+  echo "$PUBKEY" > "$SUDO_HOME/.ssh/authorized_keys"
+  chmod 600 "$SUDO_HOME/.ssh/authorized_keys"
+  chown -R "$SUDO_USER:$SUDO_USER" "$SUDO_HOME/.ssh"
 fi
 
 # --- SSH client defaults ---
-cat << 'EOF' > "$MYHOME/.ssh/config"
+cat << 'EOF' > "$SUDO_HOME/.ssh/config"
 Host *
   ServerAliveInterval 60
   StrictHostKeyChecking no
 EOF
-chmod 600 "$MYHOME/.ssh/config"
-chown "$SUDO_USER:$SUDO_USER" "$MYHOME/.ssh/config"
+chmod 600 "$SUDO_HOME/.ssh/config"
+chown "$SUDO_USER:$SUDO_USER" "$SUDO_HOME/.ssh/config"
 
 # --- System updates + core packages ---
 export DEBIAN_FRONTEND=noninteractive
@@ -54,11 +42,9 @@ apt-get upgrade -qy
 apt-get install -qy vim nano tmux curl git htop ufw fail2ban unattended-upgrades python3-pip
 
 # --- Install uv (Python package manager) ---
-# Using official Astral installer: https://github.com/astral-sh/uv
 curl -LsSf https://astral.sh/uv/install.sh | bash
-# Add uv to PATH for the sudo user
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$MYHOME/.bashrc"
-chown "$SUDO_USER:$SUDO_USER" "$MYHOME/.bashrc"
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SUDO_HOME/.bashrc"
+chown "$SUDO_USER:$SUDO_USER" "$SUDO_HOME/.bashrc"
 
 # --- Enable unattended upgrades (no auto reboot) ---
 cat << 'EOF' > /etc/apt/apt.conf.d/51unattended-upgrades-local
