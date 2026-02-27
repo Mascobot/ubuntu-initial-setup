@@ -27,7 +27,7 @@ Automated bash script for securing and configuring a fresh Ubuntu server with Py
 
 ### Package Installation
 - System updates and upgrades
-- Essential tools: `vim`, `nano`, `tmux`, `curl`, `git`, `htop`
+- Essential tools: `vim`, `nano`, `tmux`, `curl`, `git`, `htop`, `btop`
 - Security tools: `ufw`, `fail2ban`, `unattended-upgrades`
 - Python tools: `python3-pip`, UV package manager
 
@@ -57,6 +57,7 @@ sudo ./setup.sh
   1. Create SSH tunnel: `ssh -N -L localhost:5000:localhost:5000 root@<server-ip>`
   2. Open browser: `http://localhost:5000/?token=<displayed-token>`
 - **Jupyter logs**: `tmux attach -t jupyter` (Ctrl+B, D to detach)
+- **Restart Jupyter** (if tmux was killed): `./restart-jupyter.sh`
 
 ## Requirements
 - Fresh Ubuntu server (WSL not supported)

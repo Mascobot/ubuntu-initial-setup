@@ -44,7 +44,7 @@ print_status "Updating system packages..."
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qy
 apt-get upgrade -qy
-apt-get install -qy vim nano tmux curl git htop ufw fail2ban unattended-upgrades python3-pip
+apt-get install -qy vim nano tmux curl git htop btop ufw fail2ban unattended-upgrades python3-pip
 
 # --- Install uv (Astral Python manager) ---
 print_status "Installing uv..."
